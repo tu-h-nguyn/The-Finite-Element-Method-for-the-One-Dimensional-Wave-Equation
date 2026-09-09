@@ -1,0 +1,54 @@
+name: verify
+
+# The report's tables are only worth what they can be regenerated from, so CI
+# recomputes all four from source and fails if any entry drifts from the value
+# printed in the PDF.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  tables:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      # This is the real check: every entry of Tables 1-4 is recomputed from
+      # fem_wave.py and compared against the value printed in the PDF. The
+      # script exits non-zero on a mismatch.
+      - name: Recompute Tables 1-4 and check them against the report
+        run: python3 reproduce_tables.py
+
+      # The figures on the page are generated, but its tables are hand-written
+      # HTML, so they are the one thing that can silently drift into a wrong
+      # public claim. This re-derives every cell from the solver.
+      - name: Check every number on the page against the solver
+        run: python3 check_page_numbers.py
+
+      # Figures are not byte-reproducible (matplotlib stamps a creation date),
+      # so this is a smoke test that both figure sets still render, not a diff.
+      - name: Regenerate both figure sets
+        run: |
+          python3 make_figs.py
+          python3 make_figs.py --web
+          test -f figures/fig_stability.pdf
+          test -f docs/figures/fig_stability.svg
+
+      - name: Confirm the served page still references every figure it ships
+        run: |
+          for f in convergence solution stability energy; do
+            grep -q "figures/fig_${f}.svg" docs/index.html \
+              || { echo "::error::docs/index.html does not reference fig_${f}.svg"; exit 1; }
+          done
+          echo "All four figures are referenced by the page."

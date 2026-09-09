@@ -1,0 +1,677 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sharp CFL for P1 finite elements on the wave equation — Nguyễn Hoàng Tú</title>
+  <meta name="description" content="Why Δt ≤ h/c is not sufficient for the consistent mass matrix. Exact spectrum of (S,T) gives Δt &lt; h/(c√3) for full mass and Δt &lt; h/c for lumped — matched to four significant figures, with every table machine-verified.">
+  <link rel="canonical" href="https://tu-h-nguyn.github.io/fem-wave-1d/">
+  <meta name="robots" content="index, follow, max-image-preview:large">
+  <meta name="author" content="Nguyễn Hoàng Tú">
+  <meta name="theme-color" content="#0369a1">
+
+  <meta property="og:type" content="article">
+  <meta property="og:site_name" content="Nguyễn Hoàng Tú">
+  <meta property="og:title" content="Sharp CFL for P1 finite elements on the wave equation">
+  <meta property="og:description" content="The familiar Δt ≤ h/c is not sufficient with a consistent mass matrix. The exact spectrum of (S,T) gives Δt < h/(c√3) for full mass and Δt < h/c for lumped — confirmed to four significant figures, every table machine-verified against the report.">
+  <meta property="og:url" content="https://tu-h-nguyn.github.io/fem-wave-1d/">
+  <meta property="og:image" content="https://tu-h-nguyn.github.io/fem-wave-1d/og.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="Delta-t is not less than or equal to h/c — the consistent mass matrix needs a step root-3 times smaller than the textbook bound. Threshold matched to four significant figures, four of four tables machine-verified.">
+  <meta property="og:locale" content="en_US">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:image" content="https://tu-h-nguyn.github.io/fem-wave-1d/og.png">
+  <meta name="twitter:title" content="Sharp CFL for P1 finite elements on the wave equation">
+  <meta name="twitter:description" content="Δt ≤ h/c is not sufficient with a consistent mass matrix. The exact spectrum of (S,T) says why, to four significant figures.">
+
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+
+  <!-- Google Analytics (GA4) — same property as the portfolio -->
+  <script async src="https://www.googletagmanager.com/gtag/js?id=G-KGRCWRY9BV"></script>
+  <script>
+    window.dataLayer = window.dataLayer || [];
+    function gtag(){dataLayer.push(arguments);}
+    gtag('js', new Date());
+    gtag('config', 'G-KGRCWRY9BV');
+  </script>
+
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "ScholarlyArticle",
+    "headline": "Finite Element Method for the One-Dimensional Wave Equation: Sharp Stability Analysis and Verified Convergence Orders",
+    "author": [
+      { "@type": "Person", "name": "Nguyễn Hoàng Tú", "url": "https://github.com/John-hcmus" },
+      { "@type": "Person", "name": "Nông Thanh Toàn" }
+    ],
+    "datePublished": "2026-07-29",
+    "inLanguage": "vi",
+    "url": "https://tu-h-nguyn.github.io/fem-wave-1d/",
+    "about": ["Finite element method", "Wave equation", "CFL condition", "Mass lumping", "Numerical stability"],
+    "isPartOf": { "@type": "Course", "name": "Numerical Analysis for Partial Differential Equations" },
+    "publisher": { "@type": "CollegeOrUniversity", "name": "VNU-HCM University of Science" }
+  }
+  </script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg: #fafaf9;
+      --surface: #ffffff;
+      --text: #18181b;
+      --text-secondary: #52525b;
+      --text-muted: #71717a;
+      --accent: #0369a1;
+      --accent-deep: #075985;
+      --accent-light: #e0f2fe;
+      --border: #e4e4e7;
+      --border-strong: #d4d4d8;
+      --ok: #15803d;
+      /* Inter sits second on purpose — full Vietnamese coverage, so a missing
+         Space Grotesk glyph substitutes from Inter, not a generic face. */
+      --mono: 'Space Grotesk', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      --body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      --max-w: 720px;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--body);
+      color: var(--text);
+      background: var(--bg);
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .wrap { max-width: var(--max-w); margin: 0 auto; padding: 0 1.5rem; }
+
+    a { color: var(--accent); }
+
+    .skip {
+      position: absolute; left: -9999px;
+      background: var(--accent); color: #fff;
+      padding: 0.5rem 1rem; z-index: 100;
+    }
+    .skip:focus { left: 0; top: 0; }
+
+    /* ── Nav ── */
+    .nav {
+      position: sticky; top: 0; z-index: 50;
+      background: rgba(250, 250, 249, 0.92);
+      backdrop-filter: blur(8px);
+      border-bottom: 1px solid var(--border);
+    }
+    .nav-inner {
+      max-width: var(--max-w); margin: 0 auto;
+      padding: 0.7rem 1.5rem;
+      display: flex; align-items: baseline; justify-content: space-between; gap: 1rem;
+    }
+    .nav-name { font-family: var(--mono); font-weight: 600; font-size: 0.85rem; }
+    .nav-links { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 0.5rem 1.1rem; }
+    .nav-links a {
+      font-family: var(--mono); font-size: 0.78rem; font-weight: 500;
+      color: var(--text-secondary); text-decoration: none;
+    }
+    .nav-links a:hover, .nav-links a:focus-visible { color: var(--accent); }
+
+    /* ── Hero ── */
+    header.hero { padding: 3.25rem 0 2.5rem; }
+
+    .eyebrow {
+      font-family: var(--mono); font-size: 0.72rem; font-weight: 500;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--text-muted); margin-bottom: 0.75rem;
+    }
+
+    header.hero h1 {
+      font-family: var(--mono);
+      font-size: 2.05rem; font-weight: 700;
+      letter-spacing: -0.03em; line-height: 1.15;
+      margin-bottom: 0.7rem;
+    }
+
+    .standfirst { color: var(--text-secondary); font-size: 0.97rem; max-width: 36rem; }
+    .standfirst strong { color: var(--text); font-weight: 600; }
+
+    .byline {
+      margin-top: 1.4rem; font-size: 0.82rem; color: var(--text-muted);
+      font-family: var(--mono); line-height: 1.7;
+    }
+
+    .cta-row { display: flex; flex-wrap: wrap; gap: 0.6rem; margin-top: 1.5rem; }
+    .btn {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      font-family: var(--mono); font-size: 0.85rem; font-weight: 500;
+      text-decoration: none; padding: 0.55rem 1.15rem;
+      border: 1px solid var(--accent);
+      transition: background 0.15s, color 0.15s;
+    }
+    .btn-primary { background: var(--accent); color: #fff; }
+    .btn-primary:hover, .btn-primary:focus-visible { background: var(--accent-deep); border-color: var(--accent-deep); outline: none; }
+    .btn-secondary { background: transparent; color: var(--accent); }
+    .btn-secondary:hover, .btn-secondary:focus-visible { background: var(--accent); color: #fff; outline: none; }
+    .btn:focus-visible { box-shadow: 0 0 0 3px var(--accent-light); }
+
+    /* ── Sections ── */
+    section {
+      padding: 2.6rem 0;
+      border-top: 1px solid var(--border);
+      scroll-margin-top: 4rem;
+    }
+    section h2 {
+      font-family: var(--mono);
+      font-size: 0.8rem; font-weight: 600;
+      text-transform: uppercase; letter-spacing: 0.09em;
+      color: var(--text-muted);
+      margin-bottom: 1.3rem;
+    }
+    section h3 {
+      font-family: var(--mono); font-size: 0.97rem; font-weight: 600;
+      letter-spacing: -0.01em; margin: 1.9rem 0 0.55rem;
+    }
+    p + p { margin-top: 0.85rem; }
+    section p, section li { font-size: 0.92rem; color: var(--text-secondary); }
+    section p strong, section li strong { color: var(--text); font-weight: 600; }
+
+    ul.dashed { list-style: none; margin: 0.7rem 0 0; }
+    ul.dashed li { position: relative; padding-left: 1rem; margin-bottom: 0.4rem; }
+    ul.dashed li::before { content: "—"; position: absolute; left: 0; color: var(--text-muted); }
+
+    /* ── Result tiles ── */
+    .ev-grid {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 1px; background: var(--border);
+      border: 1px solid var(--border);
+    }
+    .ev { background: var(--surface); padding: 1.1rem 1.15rem; }
+    .ev-num {
+      font-family: var(--mono); font-size: 1.4rem; font-weight: 700;
+      letter-spacing: -0.02em; line-height: 1.2; color: var(--accent);
+      margin-bottom: 0.3rem;
+    }
+    .ev-lab { font-size: 0.8rem; line-height: 1.55; color: var(--text-secondary); }
+
+    .callout {
+      margin-top: 1.5rem; padding: 1rem 1.15rem;
+      border-left: 3px solid var(--accent);
+      background: var(--accent-light);
+      font-size: 0.88rem; line-height: 1.65; color: #0c4a6e;
+    }
+    .callout strong { font-weight: 600; }
+
+    /* ── Maths ── */
+    .eq {
+      font-family: var(--mono); font-size: 1rem;
+      text-align: center; color: var(--text);
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 0.95rem 1rem; margin: 1.1rem 0;
+      overflow-x: auto;
+    }
+    .eq .note { display: block; font-size: 0.75rem; color: var(--text-muted); margin-top: 0.45rem; }
+    code {
+      font-family: var(--mono); font-size: 0.88em;
+      background: rgba(0,0,0,0.045); padding: 0.05rem 0.3rem;
+    }
+    pre {
+      font-family: var(--mono); font-size: 0.8rem; line-height: 1.65;
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 0.9rem 1rem; margin: 1rem 0; overflow-x: auto;
+      color: var(--text);
+    }
+    pre code { background: none; padding: 0; font-size: 1em; }
+
+    /* ── Tables ── */
+    .table-scroll { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--border); }
+    table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 0.83rem; }
+    caption {
+      caption-side: top; text-align: left;
+      font-size: 0.8rem; color: var(--text-muted);
+      padding: 0.7rem 0.8rem 0.55rem; border-bottom: 1px solid var(--border);
+    }
+    th, td {
+      padding: 0.42rem 0.8rem; text-align: right;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono); font-variant-numeric: tabular-nums;
+      white-space: nowrap;
+    }
+    th {
+      font-weight: 600; font-size: 0.76rem;
+      color: var(--text-muted); text-transform: none;
+      border-bottom: 1px solid var(--border-strong);
+    }
+    td { color: var(--text-secondary); }
+    tr:last-child td { border-bottom: none; }
+    th:first-child, td:first-child { text-align: left; }
+    td.state { text-align: left; font-family: var(--body); white-space: normal; }
+    td.good { color: var(--ok); }
+    td.bad { color: #b91c1c; }
+
+    /* ── Figures ── */
+    figure { margin: 1.6rem 0; }
+    figure img {
+      width: 100%; height: auto; display: block;
+      background: var(--surface); border: 1px solid var(--border);
+      padding: 0.6rem;
+    }
+    figcaption {
+      font-size: 0.79rem; color: var(--text-muted);
+      margin-top: 0.5rem; line-height: 1.6;
+    }
+
+    /* ── Footer ── */
+    footer {
+      padding: 2rem 0 3rem; border-top: 1px solid var(--border);
+      font-size: 0.78rem; color: var(--text-muted); font-family: var(--mono);
+    }
+    footer a { text-decoration: none; }
+    footer a:hover { text-decoration: underline; }
+    footer p + p { margin-top: 0.5rem; }
+
+    @media (max-width: 620px) {
+      header.hero h1 { font-size: 1.6rem; }
+      .ev-grid { grid-template-columns: 1fr; }
+      .nav-links { gap: 0.8rem; }
+      .nav-links a { font-size: 0.72rem; }
+    }
+  </style>
+</head>
+<body>
+
+  <a class="skip" href="#main">Skip to content</a>
+
+  <nav class="nav" aria-label="Section navigation">
+    <div class="nav-inner">
+      <span class="nav-name">Nguyễn Hoàng Tú</span>
+      <div class="nav-links">
+        <a href="https://tu-h-nguyn.github.io/FlyRank-End-to-End-Machine-Learning-Project-Internship/portfolio/">← Portfolio</a>
+        <a href="#result">Result</a>
+        <a href="#evidence">Evidence</a>
+        <a href="#reproduce">Reproducibility</a>
+      </div>
+    </div>
+  </nav>
+
+  <main id="main">
+
+    <header class="hero">
+      <div class="wrap">
+        <p class="eyebrow">Numerical analysis · Coursework report</p>
+        <h1>Δt ≤ h/c is not enough</h1>
+        <p class="standfirst">
+          A sharp stability analysis of P1 finite elements + leapfrog for the
+          one-dimensional wave equation. Computing the spectrum of the pair
+          <code>(S, T)</code> in closed form turns the usual sufficient CFL guess into a
+          <strong>necessary and sufficient</strong> condition — and shows that the
+          consistent mass matrix needs a step <strong>√3 times smaller</strong> than the
+          textbook bound suggests.
+        </p>
+        <p class="byline">
+          Course report, <em>Numerical Analysis for PDEs</em> — Faculty of Mathematics
+          and Computer Science, VNU-HCM University of Science · 29 July 2026<br>
+          Written with Nông Thanh Toàn · 19 pages, Vietnamese
+        </p>
+        <div class="cta-row">
+          <a class="btn btn-primary" href="report-fem-wave-vi.pdf">Read the report (PDF, VI)</a>
+          <a class="btn btn-secondary" href="https://github.com/tu-h-nguyn/fem-wave-1d" target="_blank" rel="noopener">Code &amp; verification</a>
+        </div>
+      </div>
+    </header>
+
+    <section id="result">
+      <div class="wrap">
+        <h2>The result</h2>
+
+        <div class="ev-grid">
+          <div class="ev">
+            <div class="ev-num">1/√3</div>
+            <p class="ev-lab">Exact CFL constant for the consistent mass matrix
+              (θ* = Δt/h = 0.5774), against the 1.0 the familiar bound implies.</p>
+          </div>
+          <div class="ev">
+            <div class="ev-num">4 s.f.</div>
+            <p class="ev-lab">Agreement between the analytic threshold and the measured
+              one — the sweep flips at 0.5776 for N = 160, predicted 0.577434.</p>
+          </div>
+          <div class="ev">
+            <div class="ev-num">2.00 / 1.00</div>
+            <p class="ev-lab">Observed convergence orders in the L² norm and the H¹
+              semi-norm, over six mesh refinements from N = 10 to N = 320.</p>
+          </div>
+          <div class="ev">
+            <div class="ev-num">4 / 4</div>
+            <p class="ev-lab">Tables in the report recomputed from source and checked
+              digit-for-digit by a script that fails the build on a mismatch.</p>
+          </div>
+        </div>
+
+        <div class="callout">
+          <strong>The one-line version.</strong> Stability of the leapfrog scheme is
+          governed by the largest generalised eigenvalue of the stiffness/mass pair, and
+          for P1 elements that eigenvalue is known exactly. Full mass matrix:
+          λ<sub>max</sub> → 12/h², so Δt &lt; h/(c√3). Lumped: λ<sub>max</sub> → 4/h², so
+          Δt &lt; h/c. Same mesh, same order of accuracy, step sizes a factor of 1.73
+          apart.
+        </div>
+      </div>
+    </section>
+
+    <section id="problem">
+      <div class="wrap">
+        <h2>The problem</h2>
+        <p>
+          The model problem is the homogeneous Dirichlet wave equation on the unit
+          interval: find <code>u(x,t)</code> with <code>u_tt − c²u_xx = 0</code> on
+          <code>(0,1) × (0,T)</code>, <code>u(0,t) = u(1,t) = 0</code>, and given initial
+          displacement and velocity. Discretise in space with piecewise-linear P1
+          elements and in time with the centred (leapfrog) difference, and you get the
+          three-term recursion that every course covers.
+        </p>
+        <p>
+          What courses usually do <em>not</em> pin down is the stability limit. The
+          bound quoted from the finite-difference case, <code>Δt ≤ h/c</code>, is
+          presented as if it carried over. It does not. Run leapfrog with a consistent
+          mass matrix at <code>Δt = 0.9h/c</code> and it diverges — quietly at first,
+          because the unstable mode is the highest one and typical initial data barely
+          excites it, then catastrophically.
+        </p>
+        <p>
+          So the question this report answers is the sharp one: <strong>for which Δt is
+          the scheme stable, exactly</strong> — not "for which Δt can we prove it is
+          stable".
+        </p>
+      </div>
+    </section>
+
+    <section id="analysis">
+      <div class="wrap">
+        <h2>The analysis</h2>
+        <p>
+          Eliminating the boundary degrees of freedom keeps the semi-discrete system
+          symmetric, <code>T Ü + c² S U = 0</code>, with <code>T</code> the mass matrix
+          and <code>S</code> the stiffness matrix — both symmetric positive definite and
+          tridiagonal. Expanding in the generalised eigenvectors of <code>(S, T)</code>
+          decouples the recursion into scalar three-term recursions, one per mode, and
+          each is stable exactly when its amplification polynomial has roots on the unit
+          circle. That gives the condition on the step directly:
+        </p>
+
+        <div class="eq">
+          Δt &lt; 2 / (c · √λ<sub>max</sub>(T⁻¹S))
+          <span class="note">necessary and sufficient — not just sufficient</span>
+        </div>
+
+        <p>
+          The step that makes this sharp rather than decorative is that
+          <code>λ<sub>max</sub></code> is available in closed form on a uniform mesh, for
+          both choices of mass matrix. Writing θ<sub>m</sub> = mπ/N:
+        </p>
+
+        <div class="table-scroll">
+          <table>
+            <caption>Closed-form spectra and the CFL constants they imply.</caption>
+            <thead>
+              <tr><th>Mass matrix</th><th>λ<sub>max</sub></th><th>h → 0</th><th>CFL bound</th><th>θ* = Δt/h</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>Full (consistent)</td><td>(6/h²)·max (1−cos θ<sub>m</sub>)/(2+cos θ<sub>m</sub>)</td><td>12/h²</td><td>Δt &lt; h/(c√3)</td><td>0.5774</td></tr>
+              <tr><td>Lumped</td><td>(2/h²)·max (1−cos θ<sub>m</sub>)</td><td>4/h²</td><td>Δt &lt; h/c</td><td>1.0000</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <p>
+          That is the whole explanation for the failure above. <code>Δt ≤ h/c</code> is
+          the <em>lumped</em> constant; applying it to the consistent mass matrix
+          overshoots the true limit by √3. The report also proves the matching
+          convergence result via the Ritz projection — which avoids an uncontrolled
+          remainder term and removes any need for the Aubin–Nitsche lemma — giving
+          O(h²) in L² and O(h) in the H¹ semi-norm for P1.
+        </p>
+      </div>
+    </section>
+
+    <section id="evidence">
+      <div class="wrap">
+        <h2>Numerical evidence</h2>
+        <p>
+          Four experiments, all against the exact solution
+          <code>u(x,t) = cos(2πct)·sin(2πx)</code>, errors measured at
+          <code>T = 1</code> with 5-point Gauss–Legendre quadrature per element. Every
+          number below was regenerated from source for this page.
+        </p>
+
+        <h3>1 — Spatial order</h3>
+        <div class="table-scroll">
+          <table>
+            <caption>Full mass matrix, θ = Δt/h = 0.5, measured at T = 1. Order estimated by p ≈ log₂(E(h)/E(h/2)).</caption>
+            <thead>
+              <tr><th>N</th><th>h</th><th>Δt</th><th>‖u−Û‖<sub>L²</sub></th><th>order</th><th>|u−Û|<sub>H¹</sub></th><th>order</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>10</td><td>0.100000</td><td>0.050000</td><td>3.0679e−02</td><td>—</td><td>8.0145e−01</td><td>—</td></tr>
+              <tr><td>20</td><td>0.050000</td><td>0.025000</td><td>6.6945e−03</td><td>2.20</td><td>4.0227e−01</td><td>0.99</td></tr>
+              <tr><td>40</td><td>0.025000</td><td>0.012500</td><td>1.6129e−03</td><td>2.05</td><td>2.0138e−01</td><td>1.00</td></tr>
+              <tr><td>80</td><td>0.012500</td><td>0.006250</td><td>3.9944e−04</td><td>2.01</td><td>1.0072e−01</td><td>1.00</td></tr>
+              <tr><td>160</td><td>0.006250</td><td>0.003125</td><td>9.9623e−05</td><td>2.00</td><td>5.0364e−02</td><td>1.00</td></tr>
+              <tr><td>320</td><td>0.003125</td><td>0.001563</td><td>2.4891e−05</td><td>2.00</td><td>2.5183e−02</td><td>1.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <figure>
+          <img src="figures/fig_convergence.svg" width="1026" height="406"
+               alt="Two log–log plots of error against mesh size h. The L² error follows a slope-2 reference line and the H¹ semi-norm follows a slope-1 line across all six refinements.">
+          <figcaption>
+            Errors against <code>h</code> on log–log axes, with O(h²) and O(h) reference
+            lines. The data run parallel to the references over the whole range.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <img src="figures/fig_solution.svg" width="1036" height="278"
+               alt="Four snapshots of the FEM solution against the exact solution at t = 0, 0.125, 0.5 and 20. Amplitude is preserved at t = 20; the curves are visibly shifted in phase.">
+          <figcaption>
+            FEM solution (N = 20, θ = 0.5) against the exact solution. After 20 periods
+            the amplitude has <em>not</em> grown — as the discrete energy identity
+            predicts. The long-run error is phase error, i.e. numerical dispersion.
+          </figcaption>
+        </figure>
+
+        <h3>2 — Temporal order</h3>
+        <p>
+          To separate the time error from the space error, N is held at 200 and
+          successive halvings of Δt are compared Richardson-style: ‖Û<sub>Δt</sub> −
+          Û<sub>Δt/2</sub>‖ has the same order as the temporal error.
+        </p>
+        <div class="table-scroll">
+          <table>
+            <caption>N = 200 fixed, T = 1.</caption>
+            <thead>
+              <tr><th>θ = Δt/h</th><th>Δt</th><th>‖Û<sub>Δt</sub> − Û<sub>Δt/2</sub>‖<sub>L²</sub></th><th>order</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>0.500000</td><td>2.500e−03</td><td>1.023662e−08</td><td>—</td></tr>
+              <tr><td>0.250000</td><td>1.250e−03</td><td>2.299690e−09</td><td>2.15</td></tr>
+              <tr><td>0.125000</td><td>6.250e−04</td><td>5.586810e−10</td><td>2.04</td></tr>
+              <tr><td>0.062500</td><td>3.125e−04</td><td>1.386980e−10</td><td>2.01</td></tr>
+              <tr><td>0.031250</td><td>1.563e−04</td><td>3.466993e−11</td><td>2.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Order 2 confirms the analysis and, with it, the second-order initialisation of
+          the first time step — a first-order start would have shown up here as a
+          degraded order.
+        </p>
+
+        <h3>3 — Locating the threshold</h3>
+        <p>
+          The direct test of the sharp condition: sweep θ = Δt/h and record the amplitude
+          after M = ⌊T/Δt⌋ steps from data normalised to 1. The highest mode is seeded at
+          amplitude 1e−8 so that an instability shows up immediately instead of waiting
+          for round-off to grow it.
+        </p>
+        <div class="table-scroll">
+          <table>
+            <caption>Amplitude max|U<sup>M</sup>|, full mass matrix. Analytic thresholds: θ*(N=80) = 0.577684, θ*(N=160) = 0.577434; the h → 0 limit is 1/√3 = 0.577350.</caption>
+            <thead>
+              <tr><th>θ</th><th>N = 80</th><th>N = 160</th><th>State</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>0.5700</td><td>9.999e−01</td><td>9.999e−01</td><td class="state good">both stable</td></tr>
+              <tr><td>0.5774</td><td>9.997e−01</td><td>1.000e+00</td><td class="state good">both stable</td></tr>
+              <tr><td>0.5776</td><td>9.998e−01</td><td>1.002e+00</td><td class="state">N = 160 just past its threshold</td></tr>
+              <tr><td>0.5778</td><td>9.998e−01</td><td>2.362e+00</td><td class="state bad">N = 160 diverges</td></tr>
+              <tr><td>0.5780</td><td>9.999e−01</td><td>2.065e+02</td><td class="state bad">N = 160 diverges</td></tr>
+              <tr><td>0.5800</td><td>2.242e+02</td><td>1.623e+14</td><td class="state bad">both diverge</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          The measured threshold matches θ* to four significant figures. The detail worth
+          noticing is the row at θ = 0.5776, where N = 160 has gone unstable while N = 80
+          is still fine — exactly what the closed form predicts, since θ* decreases with N
+          towards 1/√3 from above. A coarse-mesh test would have passed here and shipped
+          the bug.
+        </p>
+
+        <figure>
+          <img src="figures/fig_stability.svg" width="764" height="363"
+               alt="Semi-log plot of final amplitude against θ. Two near-vertical walls: the full-mass curve turns up at θ ≈ 0.577 and the lumped-mass curve at θ = 1.">
+          <figcaption>
+            Amplitude against θ = Δt/h at N = 160. Two vertical walls, at 1/√3 for the
+            full mass matrix and at 1 for the lumped one — the whole analysis in one
+            picture.
+          </figcaption>
+        </figure>
+
+        <figure>
+          <img src="figures/fig_energy.svg" width="738" height="349"
+               alt="Semi-log plot of normalised discrete energy over 20 time units for three step sizes. Two curves stay flat at 1; the one above the threshold grows exponentially by many orders of magnitude.">
+          <figcaption>
+            Normalised discrete energy (N = 80). Below the threshold it is conserved to
+            machine precision over 20 time units; <strong>0.4% above it</strong>, the
+            energy grows exponentially.
+          </figcaption>
+        </figure>
+
+        <h3>4 — What lumping buys</h3>
+        <p>
+          Repeating experiment 1 with the lumped mass matrix at θ = 0.9 — beyond the full
+          matrix's threshold, inside the lumped one's:
+        </p>
+        <div class="table-scroll">
+          <table>
+            <caption>Lumped mass matrix, θ = 0.9 — an 80% larger time step than the θ = 0.5 run above, and 56% past the full matrix’s own threshold. Still stable.</caption>
+            <thead>
+              <tr><th>N</th><th>h</th><th>‖u−Û‖<sub>L²</sub></th><th>order</th><th>|u−Û|<sub>H¹</sub></th><th>order</th></tr>
+            </thead>
+            <tbody>
+              <tr><td>10</td><td>0.100000</td><td>2.5370e−02</td><td>—</td><td>8.0057e−01</td><td>—</td></tr>
+              <tr><td>20</td><td>0.050000</td><td>6.3636e−03</td><td>2.00</td><td>4.0226e−01</td><td>0.99</td></tr>
+              <tr><td>40</td><td>0.025000</td><td>1.5922e−03</td><td>2.00</td><td>2.0138e−01</td><td>1.00</td></tr>
+              <tr><td>80</td><td>0.012500</td><td>3.9815e−04</td><td>2.00</td><td>1.0072e−01</td><td>1.00</td></tr>
+              <tr><td>160</td><td>0.006250</td><td>9.9542e−05</td><td>2.00</td><td>5.0364e−02</td><td>1.00</td></tr>
+              <tr><td>320</td><td>0.003125</td><td>2.4886e−05</td><td>2.00</td><td>2.5183e−02</td><td>1.00</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <p>
+          Lumping keeps the O(h²) order, gives a marginally <em>smaller</em> L² error,
+          allows a step √3 ≈ 1.73 times larger, and reduces each solve to a scalar
+          division instead of a tridiagonal solve. For this problem it wins on every
+          axis at once — which is worth saying plainly, because mass lumping is usually
+          introduced as a trade-off.
+        </p>
+      </div>
+    </section>
+
+    <section id="reproduce">
+      <div class="wrap">
+        <h2>Reproducibility</h2>
+        <p>
+          A report whose tables cannot be regenerated is a claim, not a result. So the
+          repository carries <code>reproduce_tables.py</code>: it recomputes all four
+          tables from <code>fem_wave.py</code>, compares each entry against the value
+          printed in the PDF, and exits non-zero on any mismatch.
+        </p>
+        <pre><code>pip install numpy matplotlib
+
+python3 reproduce_tables.py    # recomputes Tables 1-4, checks them, writes results/tables.md
+python3 make_figs.py           # figures/*.pdf  - the report's figures
+python3 make_figs.py --web     # docs/fem-wave/figures/*.svg - this page's figures</code></pre>
+        <p>
+          Current state: all four tables agree with the report to every printed digit,
+          and the figures on this page are generated by the same script that generates
+          the report's, from the same computed arrays — so the page cannot drift away
+          from the paper.
+        </p>
+
+        <h3>The gap it caught</h3>
+        <p>
+          The first run reproduced Tables 1, 2 and 4 exactly and failed on Table 3: the
+          stability sweep stayed bounded at θ = 0.578 and θ = 0.580, where the report
+          records divergence. The cause was not the analysis but the listing. Section 7.3
+          seeds the highest eigenmode at amplitude 1e−8 so the instability is visible at
+          once; the <code>growth()</code> function printed in Appendix A did not do it.
+          Initial data <code>sin(2πx)</code> contains almost none of mode
+          <code>m = N−1</code>, so without the seed you are waiting on round-off.
+        </p>
+        <p>
+          <code>growth()</code> now takes <code>seed=1e-8</code> (<code>seed=0.0</code>
+          restores the old behaviour) and all six rows of Table 3 reproduce to four
+          digits. The appendix includes the file with <code>\lstinputlisting</code>, so
+          the report picks up the fix on its next compile. Worth stating rather than
+          quietly patching: the published numbers were right, the published code could
+          not produce them, and only running it found that out.
+        </p>
+      </div>
+    </section>
+
+    <section id="limits">
+      <div class="wrap">
+        <h2>Where it stops</h2>
+        <ul class="dashed">
+          <li>One space dimension, uniform mesh, constant wave speed, homogeneous
+            Dirichlet data, P1 elements, explicit leapfrog. The sharp constant is exact
+            under those assumptions and claims nothing outside them.</li>
+          <li>A variable coefficient, a non-uniform mesh, or higher-order elements each
+            change λ<sub>max</sub>, so the constant would have to be recomputed. The
+            method — diagonalise (S, T), read off the bound — carries over; the number
+            does not.</li>
+          <li>The scheme is conservative but dispersive: amplitude is preserved
+            indefinitely, phase is not. Over 20 periods at N = 20 the visible error is
+            entirely phase lag, and no stability result improves that — it takes a finer
+            mesh or a higher-order element.</li>
+          <li>The convergence proof is for smooth solutions. Rough initial data reduces
+            the observed order and is not tested here.</li>
+        </ul>
+      </div>
+    </section>
+
+    <footer>
+      <div class="wrap">
+        <p>
+          <a href="report-fem-wave-vi.pdf">Full report (PDF, Vietnamese)</a> ·
+          <a href="https://github.com/tu-h-nguyn/fem-wave-1d" target="_blank" rel="noopener">Code &amp; verification script</a> ·
+          <a href="https://tu-h-nguyn.github.io/FlyRank-End-to-End-Machine-Learning-Project-Internship/portfolio/">Portfolio</a>
+        </p>
+        <p>
+          Coursework for <em>Numerical Analysis for PDEs</em>, VNU-HCM University of
+          Science, July 2026. Report written with Nông Thanh Toàn; the verification
+          harness, figure pipeline and this page are mine.
+        </p>
+        <p>&copy; 2026 Nguyễn Hoàng Tú · Built and deployed from a single repo.</p>
+      </div>
+    </footer>
+
+  </main>
+
+</body>
+</html>

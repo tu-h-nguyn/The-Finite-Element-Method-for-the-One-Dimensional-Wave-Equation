@@ -1,0 +1,12 @@
+# LaTeX build artifacts — the served copy is docs/report-fem-wave-vi.pdf
+baocao.pdf
+*.aux
+*.log
+*.out
+*.toc
+*.synctex.gz
+
+__pycache__/
+*.py[cod]
+.venv/
+venv/

@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tu-h-nguyn.github.io/fem-wave-1d/sitemap.xml
