@@ -5,7 +5,7 @@ Dirichlet. The point of the project is not the scheme — it is the **sharp**
 stability constant: the familiar `Δt ≤ h/c` is *not* sufficient when you use a
 consistent (full) mass matrix, and the analysis says exactly what is.
 
-**Read the write-up:** [project page](https://tu-h-nguyn.github.io/fem-wave-1d/) ·
+**Read the write-up:** [project page](https://tu-h-nguyn.github.io/The-Finite-Element-Method-for-the-One-Dimensional-Wave-Equation/) ·
 [full report, 19 pages, Vietnamese (PDF)](docs/report-fem-wave-vi.pdf)
 
 Joint coursework — *Numerical Analysis for PDEs*, Faculty of Mathematics and
