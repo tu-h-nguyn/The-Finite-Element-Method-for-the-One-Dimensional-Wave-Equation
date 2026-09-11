@@ -227,7 +227,15 @@
     pre code { background: none; padding: 0; font-size: 1em; }
 
     /* ── Tables ── */
-    .table-scroll { overflow-x: auto; margin: 1rem 0; border: 1px solid var(--border); }
+    /* The caption lives outside the scrolling box on purpose. Inside it, it
+       inherits the table's width and gets clipped at the viewport edge, which
+       on a phone truncated it mid-word. */
+    .tcap {
+      font-size: 0.8rem; color: var(--text-muted); line-height: 1.5;
+      margin: 1.2rem 0 0.4rem;
+    }
+    .table-scroll { overflow-x: auto; margin: 0 0 1rem; border: 1px solid var(--border); }
+    .tcap .swipe { display: none; }
     table { border-collapse: collapse; width: 100%; background: var(--surface); font-size: 0.83rem; }
     caption {
       caption-side: top; text-align: left;
@@ -276,8 +284,20 @@
     @media (max-width: 620px) {
       header.hero h1 { font-size: 1.6rem; }
       .ev-grid { grid-template-columns: 1fr; }
-      .nav-links { gap: 0.8rem; }
-      .nav-links a { font-size: 0.72rem; }
+
+      /* One line, always. The name used to wrap and the four links used to fall
+         onto a second row, so a sticky bar ate a third of a phone screen and
+         then followed you down the page. The in-page anchors go; the way back
+         to the portfolio stays. */
+      .nav-inner { padding: 0.55rem 1.1rem; align-items: center; }
+      .nav-name { font-size: 0.8rem; white-space: nowrap; }
+      .nav-links a:not(.nav-back) { display: none; }
+      .nav-links a.nav-back { font-size: 0.78rem; white-space: nowrap; }
+
+      /* Fewer tables need to scroll at all once the cells stop being roomy. */
+      table { font-size: 0.76rem; }
+      th, td { padding: 0.36rem 0.55rem; }
+      .tcap .swipe { display: inline; }
     }
   </style>
 </head>
@@ -289,7 +309,7 @@
     <div class="nav-inner">
       <span class="nav-name">Nguyễn Hoàng Tú</span>
       <div class="nav-links">
-        <a href="https://tu-h-nguyn.github.io/FlyRank-Machine-Learning-Internship/portfolio/">← Portfolio</a>
+        <a class="nav-back" href="https://tu-h-nguyn.github.io/FlyRank-Machine-Learning-Internship/portfolio/">← Portfolio</a>
         <a href="#result">Result</a>
         <a href="#evidence">Evidence</a>
         <a href="#reproduce">Reproducibility</a>
@@ -412,9 +432,9 @@
           both choices of mass matrix. Writing θ<sub>m</sub> = mπ/N:
         </p>
 
+        <p class="tcap">Closed-form spectra and the CFL constants they imply. <span class="swipe">(swipe the table sideways)</span></p>
         <div class="table-scroll">
           <table>
-            <caption>Closed-form spectra and the CFL constants they imply.</caption>
             <thead>
               <tr><th>Mass matrix</th><th>λ<sub>max</sub></th><th>h → 0</th><th>CFL bound</th><th>θ* = Δt/h</th></tr>
             </thead>
@@ -447,9 +467,9 @@
         </p>
 
         <h3>1 — Spatial order</h3>
+        <p class="tcap">Full mass matrix, θ = Δt/h = 0.5, measured at T = 1. Order estimated by p ≈ log₂(E(h)/E(h/2)). <span class="swipe">(swipe the table sideways)</span></p>
         <div class="table-scroll">
           <table>
-            <caption>Full mass matrix, θ = Δt/h = 0.5, measured at T = 1. Order estimated by p ≈ log₂(E(h)/E(h/2)).</caption>
             <thead>
               <tr><th>N</th><th>h</th><th>Δt</th><th>‖u−Û‖<sub>L²</sub></th><th>order</th><th>|u−Û|<sub>H¹</sub></th><th>order</th></tr>
             </thead>
@@ -489,9 +509,9 @@
           successive halvings of Δt are compared Richardson-style: ‖Û<sub>Δt</sub> −
           Û<sub>Δt/2</sub>‖ has the same order as the temporal error.
         </p>
+        <p class="tcap">N = 200 fixed, T = 1. <span class="swipe">(swipe the table sideways)</span></p>
         <div class="table-scroll">
           <table>
-            <caption>N = 200 fixed, T = 1.</caption>
             <thead>
               <tr><th>θ = Δt/h</th><th>Δt</th><th>‖Û<sub>Δt</sub> − Û<sub>Δt/2</sub>‖<sub>L²</sub></th><th>order</th></tr>
             </thead>
@@ -517,9 +537,9 @@
           amplitude 1e−8 so that an instability shows up immediately instead of waiting
           for round-off to grow it.
         </p>
+        <p class="tcap">Amplitude max|U<sup>M</sup>|, full mass matrix. Analytic thresholds: θ*(N=80) = 0.577684, θ*(N=160) = 0.577434; the h → 0 limit is 1/√3 = 0.577350. <span class="swipe">(swipe the table sideways)</span></p>
         <div class="table-scroll">
           <table>
-            <caption>Amplitude max|U<sup>M</sup>|, full mass matrix. Analytic thresholds: θ*(N=80) = 0.577684, θ*(N=160) = 0.577434; the h → 0 limit is 1/√3 = 0.577350.</caption>
             <thead>
               <tr><th>θ</th><th>N = 80</th><th>N = 160</th><th>State</th></tr>
             </thead>
@@ -571,9 +591,9 @@
           Repeating experiment 1 with the lumped mass matrix at θ = 0.9 — beyond the full
           matrix's threshold, inside the lumped one's:
         </p>
+        <p class="tcap">Lumped mass matrix, θ = 0.9 — an 80% larger time step than the θ = 0.5 run above, and 56% past the full matrix’s own threshold. Still stable. <span class="swipe">(swipe the table sideways)</span></p>
         <div class="table-scroll">
           <table>
-            <caption>Lumped mass matrix, θ = 0.9 — an 80% larger time step than the θ = 0.5 run above, and 56% past the full matrix’s own threshold. Still stable.</caption>
             <thead>
               <tr><th>N</th><th>h</th><th>‖u−Û‖<sub>L²</sub></th><th>order</th><th>|u−Û|<sub>H¹</sub></th><th>order</th></tr>
             </thead>

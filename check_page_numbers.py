@@ -47,17 +47,28 @@ def num(cell):
         return None
 
 
+# The caption sits in a <p class="tcap"> immediately before the scroll box, not
+# in a <caption> inside the table: inside, it inherited the table's width and
+# was clipped at the viewport edge on a phone. This pairs the two back up.
+TABLE_RE = re.compile(
+    r'<p class="tcap">(?P<cap>.*?)</p>\s*'
+    r'<div class="table-scroll">\s*<table>(?P<tbl>.*?)</table>',
+    re.S,
+)
+
+
 def tables(html):
-    """Yield (caption, [[cell,...],...]) for every <table> on the page."""
-    for tbl in re.findall(r"<table>(.*?)</table>", html, re.S):
-        cap = re.search(r"<caption>(.*?)</caption>", tbl, re.S)
-        body = re.search(r"<tbody>(.*?)</tbody>", tbl, re.S)
+    """Yield (caption, [[cell,...],...]) for every captioned table on the page."""
+    for m in TABLE_RE.finditer(html):
+        body = re.search(r"<tbody>(.*?)</tbody>", m.group("tbl"), re.S)
         if not body:
             continue
+        # the mobile-only "swipe the table sideways" hint is not part of the caption
+        cap = re.sub(r'<span class="swipe">.*?</span>', "", m.group("cap"), flags=re.S)
         rows = []
         for tr in re.findall(r"<tr>(.*?)</tr>", body.group(1), re.S):
             rows.append(re.findall(r"<t[dh][^>]*>(.*?)</t[dh]>", tr, re.S))
-        yield (norm(cap.group(1)) if cap else ""), rows
+        yield norm(cap), rows
 
 
 def main():
