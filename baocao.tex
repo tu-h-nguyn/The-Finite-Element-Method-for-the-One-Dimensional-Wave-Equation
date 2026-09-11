@@ -1124,7 +1124,9 @@ trọn vẹn \eqref{eq:cfl-two}.
 \includegraphics[width=0.82\textwidth]{figures/fig_stability.pdf}
 \caption{Hệ số biên độ theo $\theta = \dt/h$ với $N = 160$. Ngưỡng ổn định
 của khối lượng đầy đủ nằm tại $1/\sqrt{3} \approx 0.577$, của khối lượng gộp
-tại $1$, đúng như Định lý~\ref{thm:spectrum}.}
+tại $1$, đúng như Định lý~\ref{thm:spectrum}. Vượt ngưỡng, biên độ đạt tới
+$10^{148}$ nên cả hai đường được chặn ở $10^{12}$ để vẽ; phần nằm ngang là
+ngưỡng chặn hiển thị, không phải bình nguyên.}
 \label{fig:stability}
 \end{figure}
 
@@ -1135,9 +1137,13 @@ dù chỉ $0.4\%$, năng lượng bùng nổ theo cấp số nhân.
 \begin{figure}[H]
 \centering
 \includegraphics[width=0.72\textwidth]{figures/fig_energy.pdf}
-\caption{Năng lượng rời rạc $\mathcal{E}^{n+1/2}$ chuẩn hóa theo thời gian
-($N = 80$). Với $\theta < \theta^{*}$ năng lượng được bảo toàn chính xác;
-với $\theta > \theta^{*}$ nó tăng theo cấp số nhân.}
+\caption{Bao trên $\max_{m \leq n}$ của năng lượng rời rạc
+$\mathcal{E}^{m+1/2}$ chuẩn hóa ($N = 80$). Với $\theta < \theta^{*}$ năng
+lượng được bảo toàn tới sai số máy (hai đường ổn định lệch nhau $5\times
+10^{-15}$, nên một đường vẽ nét đứt); với $\theta > \theta^{*}$ nó tăng theo
+cấp số nhân. Vẽ bao trên thay vì tỉ số thô vì khi mất ổn định, mode trội đổi
+dấu mỗi bước khiến $\mathcal{E}$ đi qua đúng $0$ --- điều mà trục log không
+biểu diễn được.}
 \label{fig:energy}
 \end{figure}
 

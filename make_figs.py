@@ -33,7 +33,8 @@ VI = {
     "l2err": r"Sai số $L^2$", "h1err": r"Sai số $H^1$",
     "l2title": r"Chuẩn $L^2$ — bậc 2", "h1title": r"Nửa chuẩn $H^1$ — bậc 1",
     "exact": "Chính xác", "stable": "ổn định",
-    "energy_title": "Năng lượng rời rạc theo thời gian ($N=80$)",
+    "energy_title": "Bao trên của năng lượng rời rạc ($N=80$)",
+    "energy_y": r"$\max_{m\leq n}\,|\mathcal{E}^{m+1/2}|\,/\,|\mathcal{E}^{1/2}|$",
     "full": "Khối lượng đầy đủ", "lumped": "Khối lượng gộp",
     "stab_title": r"Ngưỡng ổn định thực nghiệm ($N=160$, $c=1$)",
 }
@@ -41,7 +42,8 @@ EN = {
     "l2err": r"$L^2$ error", "h1err": r"$H^1$ error",
     "l2title": r"$L^2$ norm — order 2", "h1title": r"$H^1$ semi-norm — order 1",
     "exact": "Exact", "stable": "stable",
-    "energy_title": "Discrete energy over time ($N=80$)",
+    "energy_title": "Discrete energy envelope ($N=80$)",
+    "energy_y": r"$\max_{m\leq n}\,|\mathcal{E}^{m+1/2}|\,/\,|\mathcal{E}^{1/2}|$",
     "full": "Full mass", "lumped": "Lumped mass",
     "stab_title": r"Measured stability threshold ($N=160$, $c=1$)",
 }
@@ -144,15 +146,23 @@ def fig_solution(L, save):
 
 
 def fig_energy(L, save):
+    # The running maximum, not the raw ratio. Once the scheme goes unstable the
+    # dominant mode flips sign every step, so the cross term in E cancels the
+    # kinetic term exactly at some steps and E passes through zero -- and a zero
+    # on a log axis is a full-height vertical stroke. Hundreds of those render as
+    # a solid block. The envelope carries the same claim and stays readable.
     fig, ax = plt.subplots(figsize=(5.2, 2.5))
-    for th, col, lab in [(0.50, BLUE, r"$\theta=0.50$ (%s)" % L["stable"]),
-                         (0.5770, GREEN, r"$\theta=0.5770<\theta^*$"),
-                         (0.5800, RED, r"$\theta=0.5800>\theta^*$")]:
+    for th, col, ls, lab in [(0.50, BLUE, "-", r"$\theta=0.50$ (%s)" % L["stable"]),
+                             (0.5770, GREEN, "--", r"$\theta=0.5770<\theta^*$"),
+                             (0.5800, RED, "-", r"$\theta=0.5800>\theta^*$")]:
         t, E = energy_hist(80, th)
-        ax.plot(t, np.abs(E) / abs(E[0]), color=col, lw=1.3, label=lab)
+        # dashed green sits on top of solid blue: below the threshold the two are
+        # equal to 5e-15, so without distinct styles only one curve is visible.
+        ax.plot(t, np.maximum.accumulate(np.abs(E) / abs(E[0])),
+                color=col, lw=1.4, ls=ls, label=lab)
     ax.set_yscale("log")
     ax.set_xlabel("$t$")
-    ax.set_ylabel(r"$E^{n+1/2}/E^{1/2}$")
+    ax.set_ylabel(L["energy_y"], fontsize=8)
     ax.set_title(L["energy_title"], fontsize=9)
     ax.legend(frameon=False, fontsize=8)
     fig.tight_layout()
@@ -163,19 +173,23 @@ def fig_energy(L, save):
 def fig_stability(L, save):
     th = np.linspace(0.40, 1.25, 120)
     fig, ax = plt.subplots(figsize=(5.4, 2.6))
-    for lump, col, lab in [(False, BLUE, L["full"]), (True, GREEN, L["lumped"])]:
-        g = [growth(160, t, T=1.0, lumped=lump) for t in th]
-        g = [min(v, 1e20) for v in g]
-        ax.semilogy(th, g, color=col, lw=1.5, label=lab)
+    # Past the threshold the amplitude reaches 1e148, so it has to be capped for
+    # display. Capping at the old 1e20 put the cap at the top of the axis and the
+    # curve read as a line stuck to the frame; 1e12 with headroom above reads as
+    # what it is, a curve leaving the plot.
+    ceil = 1e12
+    for lump, col, ls, lab in [(False, BLUE, "-", L["full"]), (True, GREEN, "--", L["lumped"])]:
+        g = [min(growth(160, t, T=1.0, lumped=lump), ceil) for t in th]
+        ax.semilogy(th, g, color=col, lw=1.7, ls=ls, label=lab)
     ax.axvline(1 / np.sqrt(3), color=BLUE, ls=":", lw=1.2)
     ax.axvline(1.0, color=GREEN, ls=":", lw=1.2)
-    ax.text(1 / np.sqrt(3) - 0.015, 1e12, r"$1/\sqrt{3}$", color=BLUE, ha="right", fontsize=8)
-    ax.text(1.015, 1e12, r"$1$", color=GREEN, fontsize=8)
+    ax.text(1 / np.sqrt(3) - 0.015, 1e6, r"$1/\sqrt{3}$", color=BLUE, ha="right", fontsize=8)
+    ax.text(1.015, 1e6, r"$1$", color=GREEN, fontsize=8)
     ax.set_xlabel(r"$\theta=\Delta t/h$")
     ax.set_ylabel(r"$\max|U^M|$")
     ax.set_title(L["stab_title"], fontsize=9)
-    ax.set_ylim(1e-1, 1e20)
-    ax.legend(frameon=False, fontsize=8, loc="upper left")
+    ax.set_ylim(1e-1, ceil * 40)
+    ax.legend(frameon=False, fontsize=8, loc="center")
     fig.tight_layout()
     save(fig, "fig_stability")
     plt.close(fig)
