@@ -45,6 +45,23 @@ jobs:
           test -f figures/fig_stability.pdf
           test -f docs/figures/fig_stability.svg
 
+      # The canonical URL is read out of the page itself, so a repository
+      # rename cannot leave this checking a stale address. A rename already
+      # broke these links once; this is what would have caught it.
+      - name: Confirm the published page is reachable at its own canonical URL
+        run: |
+          url=$(grep -oP '(?<=<link rel="canonical" href=")[^"]+' docs/index.html)
+          echo "canonical: $url"
+          code=$(curl -s -o /tmp/live.html -w '%{http_code}' -L --retry 4 --retry-delay 15 "$url" || echo 000)
+          if [ "$code" != "200" ]; then
+            echo "::warning::$url returned HTTP $code - if Pages is mid-deploy, re-run in a few minutes."
+          elif ! grep -q "is not enough" /tmp/live.html; then
+            echo "::error::$url serves a page that is not this one - the canonical URL is pointing somewhere else."
+            exit 1
+          else
+            echo "Published page is live at its canonical URL."
+          fi
+
       - name: Confirm the served page still references every figure it ships
         run: |
           for f in convergence solution stability energy; do
