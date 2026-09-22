@@ -1,0 +1,27 @@
+cff-version: 1.2.0
+title: >-
+  The Finite Element Method for the One-Dimensional Wave Equation
+message: "If you use this software or the accompanying report, please cite it."
+type: software
+authors:
+  - family-names: Nông
+    given-names: Thanh Toàn
+  - family-names: Nguyễn
+    given-names: Hoàng Tú
+abstract: >-
+  P1 finite elements with leapfrog time stepping for the 1-D wave equation,
+  written around the sharp stability constant. The familiar CFL condition
+  Δt ≤ h/c is not sufficient with a consistent mass matrix; the closed-form
+  spectrum of the generalised eigenproblem (S, T) gives the necessary and
+  sufficient threshold Δt < 2/(c·√λmax), which is h/(c√3) for the full mass
+  matrix and h/c for the lumped one. Every number published with the project
+  is recomputed in CI.
+keywords:
+  - finite element method
+  - wave equation
+  - CFL condition
+  - leapfrog scheme
+  - mass lumping
+license: MIT
+version: 1.0.0
+date-released: "2026-07-29"

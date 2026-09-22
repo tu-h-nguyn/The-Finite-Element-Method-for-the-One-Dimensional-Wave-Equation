@@ -1,5 +1,12 @@
 # FEM for the 1D wave equation — sharp CFL analysis, reproduced
 
+[![verify](https://github.com/tu-h-nguyn/The-Finite-Element-Method-for-the-One-Dimensional-Wave-Equation/actions/workflows/verify.yml/badge.svg)](https://github.com/tu-h-nguyn/The-Finite-Element-Method-for-the-One-Dimensional-Wave-Equation/actions/workflows/verify.yml)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-56%20passing-brightgreen.svg)](tests/)
+[![Numbers checked](https://img.shields.io/badge/page%20numbers-91%20re--derived-brightgreen.svg)](check_page_numbers.py)
+[![Mutation tested](https://img.shields.io/badge/mutation%20tested-6%2F6%20caught-brightgreen.svg)](tests/)
+
 P1 finite elements + leapfrog for `u_tt - c² u_xx = 0` on `(0,1)`, homogeneous
 Dirichlet. The point of the project is not the scheme — it is the **sharp**
 stability constant: the familiar `Δt ≤ h/c` is *not* sufficient when you use a
@@ -41,17 +48,44 @@ significant figures** (§7.3), and the observed orders are `O(h²)` in L² and
 ## Reproduce it
 
 ```bash
-pip install numpy matplotlib
-
-python3 reproduce_tables.py    # recomputes Tables 1-4, checks them, writes results/tables.md
-python3 make_figs.py           # figures/*.pdf  — the report's figures (Vietnamese labels)
-python3 make_figs.py --web     # docs/figures/*.svg — the web page's figures
+make install     # numpy, matplotlib
+make test        # 56 unit tests
+make tables      # recompute Tables 1-4, check them, write results/tables.md
+make page        # re-derive all 91 numeric cells on the project page
+make figures     # figures/*.pdf for the report, docs/figures/*.svg for the page
 ```
 
 `reproduce_tables.py` recomputes every number in the report's four tables from
 `fem_wave.py`, compares each against the value printed in the PDF, and **exits
 non-zero on a mismatch**. Current state: all four tables agree to every printed
 digit. Its output is checked in at [`results/tables.md`](results/tables.md).
+
+### Checking the solver, not just the numbers
+
+The two scripts above establish that the published numbers match `fem_wave.py`.
+They say nothing about whether `fem_wave.py` is *right* — a solver that is
+wrong in the same way twice would sail through both. So the primitives are
+checked separately against closed-form mathematics, in [`tests/`](tests/):
+
+- the mass and stiffness stencils against the textbook P1 values, and mass
+  lumping against the row-sum identity it is defined by;
+- the O(N) Thomas solve against a dense `np.linalg.solve`, and against
+  `tri_mul` as its inverse;
+- `lam_max`'s closed form against a dense generalised eigensolve, at four mesh
+  sizes and both mass matrices;
+- **the sharp threshold from both sides** — at `0.98 θ*` the scheme preserves
+  amplitude (growth ≤ 1.000) and at `1.02 θ*` it blows up (≥ 283). A one-sided
+  test cannot tell a sharp bound from any tighter one;
+- that `Δt = 0.9 h/c` — which satisfies the *familiar* CFL condition — diverges
+  to `3.4e116` with the full mass matrix while staying stable when lumped. That
+  is the project's central claim, tested in both directions;
+- the observed convergence orders, 2 in `L²` and 1 in the `H¹` seminorm.
+
+The suite was mutation-tested: six deliberate bugs were planted in
+`fem_wave.py` and all six are caught. One of them — replacing the second-order
+startup `dt²/2` with `dt²` — initially escaped every test, because at `N ≤ 128`
+the spatial error hides it. It is caught now by a test at `N = 256`, where the
+same bug makes the solution diverge to `1e20`.
 
 ### One gap it caught
 
@@ -73,6 +107,7 @@ fem_wave.py           the solver: assembly, Thomas O(N), errors, stability sweep
 make_figs.py          the four figures — PDF for the report, SVG for the web page
 reproduce_tables.py   recompute + verify Tables 1-4
 check_page_numbers.py cross-check every number on the page against the solver
+tests/                56 tests of the primitives against closed-form mathematics
 figures/*.pdf         report figures (regenerable)
 results/tables.md     verified output of reproduce_tables.py
 make_og.py            renders docs/og.png, the 1200x630 social-share card

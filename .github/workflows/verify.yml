@@ -11,6 +11,29 @@ on:
   workflow_dispatch:
 
 jobs:
+  # The reproduction scripts below check that the published numbers match the
+  # solver. They cannot tell whether the solver itself is right -- for that the
+  # primitives are checked against closed-form mathematics.
+  test:
+    name: tests (python ${{ matrix.python-version }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+          cache: pip
+      - name: Install dependencies
+        run: pip install -r requirements.txt pytest ruff
+      - name: Lint
+        run: python -m ruff check .
+      - name: Test
+        run: python -m pytest
+
   tables:
     runs-on: ubuntu-latest
     steps:

@@ -1,0 +1,23 @@
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q --strict-markers"
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "NPY"]
+ignore = [
+    # The solver mirrors the report's own notation (h, N, Td, Sl, U0, Um, Uc);
+    # renaming to satisfy a linter would break the correspondence with the
+    # equations it implements.
+    "E741",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# make_og.py embeds the share card's HTML verbatim; rewrapping the markup to
+# satisfy a line-length rule would only make it harder to read against the
+# rendered card.
+"make_og.py" = ["E501"]

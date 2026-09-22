@@ -10,8 +10,8 @@ format differ, so the web page cannot drift away from the report.
 import os
 import sys
 
-import numpy as np
 import matplotlib
+import numpy as np
 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
@@ -134,7 +134,7 @@ def fig_solution(L, save):
     x, snap = snapshots(20, 0.5, ts)
     xf = np.linspace(0, 1, 400)
     fig, axs = plt.subplots(1, 4, figsize=(7.4, 2.0), sharey=True)
-    for a, t in zip(axs, ts):
+    for a, t in zip(axs, ts, strict=True):
         a.plot(xf, np.cos(2 * np.pi * t) * np.sin(2 * np.pi * xf), "--", color=RED, lw=1.4,
                label=L["exact"])
         a.plot(x, snap[t], "-o", color=BLUE, ms=2.5, lw=1.2, label="FEM")
@@ -156,7 +156,7 @@ def fig_energy(L, save):
     # on a log axis is a full-height vertical stroke. Hundreds of those render as
     # a solid block. The envelope carries the same claim and stays readable.
     fig, ax = plt.subplots(figsize=(5.2, 2.5))
-    for th, col, ls, lab in [(0.50, BLUE, "-", r"$\theta=0.50$ (%s)" % L["stable"]),
+    for th, col, ls, lab in [(0.50, BLUE, "-", rf"$\theta=0.50$ ({L['stable']})"),
                              (0.5770, GREEN, "--", r"$\theta=0.5770<\theta^*$"),
                              (0.5800, RED, "-", r"$\theta=0.5800>\theta^*$")]:
         t, E = energy_hist(80, th)
@@ -221,8 +221,8 @@ def main():
         fig_solution_animation(labels, outdir)
 
     print(f"Wrote 4 figures to {outdir}")
-    print("L2:", ["%.4e" % v for v in L2])
-    print("H1:", ["%.4e" % v for v in H1])
+    print("L2:", [f"{v:.4e}" for v in L2])
+    print("H1:", [f"{v:.4e}" for v in H1])
 
 
 # ----------------------------------------------------------------------
@@ -282,7 +282,7 @@ def fig_solution_animation(L, outdir, N=20, theta=0.5, c=1.0):
 
     fig, axes = plt.subplots(1, 2, figsize=(7.2, 2.7), sharey=True)
     lines = []
-    for ax, ttl in zip(axes, (L["anim_early"], L["anim_late"])):
+    for ax, ttl in zip(axes, (L["anim_early"], L["anim_late"]), strict=True):
         # Without these, the right panel reads as amplitude decay, which is the
         # opposite of what happens: the lagged curve is simply away from its own
         # peak at any given instant. The guides show it still reaches +-1.
@@ -305,7 +305,7 @@ def fig_solution_animation(L, outdir, N=20, theta=0.5, c=1.0):
 
     def draw(k):
         out = []
-        for (ex, fe), frames in zip(lines, (fa, fb)):
+        for (ex, fe), frames in zip(lines, (fa, fb), strict=True):
             t, U = frames[k]
             ex.set_ydata(np.cos(2 * np.pi * c * t) * np.sin(2 * np.pi * xf))
             fe.set_ydata(U)

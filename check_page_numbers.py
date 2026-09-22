@@ -111,7 +111,7 @@ def main():
         sys.exit(1)
 
     # ---- Table 1: N, h, dt, L2, order, H1, order --------------------------
-    for row, (N, h, dt, l2, p, h1, q) in zip(by_kind["spatial"], rt.table1()):
+    for row, (N, h, dt, l2, p, h1, q) in zip(by_kind["spatial"], rt.table1(), strict=True):
         cmp(f"T1 N={N} h", num(row[1]), h)
         cmp(f"T1 N={N} dt", num(row[2]), dt)
         cmp(f"T1 N={N} L2", num(row[3]), l2)
@@ -121,19 +121,19 @@ def main():
             cmp(f"T1 N={N} H1 order", num(row[6]), q, atol=ORDER_ATOL)
 
     # ---- Table 2: theta, dt, diff, order ----------------------------------
-    for row, (t, dt, d, p) in zip(by_kind["temporal"], rt.table2()):
+    for row, (t, dt, d, p) in zip(by_kind["temporal"], rt.table2(), strict=True):
         cmp(f"T2 theta={t} dt", num(row[1]), dt)
         cmp(f"T2 theta={t} diff", num(row[2]), d)
         if p is not None:
             cmp(f"T2 theta={t} order", num(row[3]), p, atol=ORDER_ATOL)
 
     # ---- Table 3: theta, N=80, N=160 --------------------------------------
-    for row, (t, g80, g160) in zip(by_kind["stability"], rt.table3()):
+    for row, (t, g80, g160) in zip(by_kind["stability"], rt.table3(), strict=True):
         cmp(f"T3 theta={t} N=80", num(row[1]), g80)
         cmp(f"T3 theta={t} N=160", num(row[2]), g160)
 
     # ---- Table 4: N, h, L2, order, H1, order ------------------------------
-    for row, (N, h, l2, p, h1, q) in zip(by_kind["lumped"], rt.table4()):
+    for row, (N, h, l2, p, h1, q) in zip(by_kind["lumped"], rt.table4(), strict=True):
         cmp(f"T4 N={N} h", num(row[1]), h)
         cmp(f"T4 N={N} L2", num(row[2]), l2)
         cmp(f"T4 N={N} H1", num(row[4]), h1)

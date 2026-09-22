@@ -24,7 +24,7 @@ NS = [10, 20, 40, 80, 160, 320]
 def order(errs):
     """Empirical order p = log2(E(h) / E(h/2)); None for the first row."""
     out = [None]
-    for a, b in zip(errs[:-1], errs[1:]):
+    for a, b in zip(errs[:-1], errs[1:], strict=True):
         out.append(np.log2(a / b))
     return out
 
@@ -38,7 +38,7 @@ def table1():
         l2s.append(l2)
         h1s.append(h1)
     pl2, ph1 = order(l2s), order(h1s)
-    for N, l2, h1, p, q in zip(NS, l2s, h1s, pl2, ph1):
+    for N, l2, h1, p, q in zip(NS, l2s, h1s, pl2, ph1, strict=True):
         rows.append((N, 1.0 / N, 0.5 / N, l2, p, h1, q))
     return rows
 
@@ -70,7 +70,7 @@ def table2():
         d = states[t] - states[t / 2] if t / 2 in states else end_state(t) - end_state(t / 2)
         diffs.append(np.sqrt(h) * np.linalg.norm(d))
     # normalisation cancels in the ratio, so the order is what matters
-    return [(t, t * h, d, p) for t, d, p in zip(thetas, diffs, order(diffs))]
+    return [(t, t * h, d, p) for t, d, p in zip(thetas, diffs, order(diffs), strict=True)]
 
 
 def table3():
@@ -87,7 +87,7 @@ def table4():
         l2s.append(l2)
         h1s.append(h1)
     pl2, ph1 = order(l2s), order(h1s)
-    return list(zip(NS, [1.0 / N for N in NS], l2s, pl2, h1s, ph1))
+    return list(zip(NS, [1.0 / N for N in NS], l2s, pl2, h1s, ph1, strict=True))
 
 
 def thresholds():
@@ -180,7 +180,7 @@ def main():
 
     report_l2 = [3.0679e-2, 6.6945e-3, 1.6129e-3, 3.9944e-4, 9.9623e-5, 2.4891e-5]
     report_h1 = [8.0145e-1, 4.0227e-1, 2.0138e-1, 1.0072e-1, 5.0364e-2, 2.5183e-2]
-    for row, rl2, rh1 in zip(t1, report_l2, report_h1):
+    for row, rl2, rh1 in zip(t1, report_l2, report_h1, strict=True):
         close(f"Table 1 L2 N={row[0]}", row[3], rl2, 1e-3)
         close(f"Table 1 H1 N={row[0]}", row[5], rh1, 1e-3)
 
@@ -188,7 +188,7 @@ def main():
         close(f"Table 2 temporal order theta={t}", p, 2.0, 0.10)
 
     report_l2_lumped = [2.5370e-2, 6.3636e-3, 1.5922e-3, 3.9815e-4, 9.9542e-5, 2.4886e-5]
-    for row, rl2 in zip(t4, report_l2_lumped):
+    for row, rl2 in zip(t4, report_l2_lumped, strict=True):
         close(f"Table 4 L2 N={row[0]}", row[2], rl2, 1e-3)
 
     close("theta*(N=80)", th[80], 0.577684, 1e-5)
