@@ -3,7 +3,7 @@
 [![verify](https://github.com/tu-h-nguyn/The-Finite-Element-Method-for-the-One-Dimensional-Wave-Equation/actions/workflows/verify.yml/badge.svg)](https://github.com/tu-h-nguyn/The-Finite-Element-Method-for-the-One-Dimensional-Wave-Equation/actions/workflows/verify.yml)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-56%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-61%20passing-brightgreen.svg)](tests/)
 [![Numbers checked](https://img.shields.io/badge/page%20numbers-91%20re--derived-brightgreen.svg)](check_page_numbers.py)
 [![Mutation tested](https://img.shields.io/badge/mutation%20tested-6%2F6%20caught-brightgreen.svg)](tests/)
 
@@ -18,6 +18,36 @@ consistent (full) mass matrix, and the analysis says exactly what is.
 Joint coursework — *Numerical Analysis for PDEs*, Faculty of Mathematics and
 Computer Science, VNU-HCM University of Science, July 2026. Report written with
 Nông Thanh Toàn.
+
+---
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tu-h-nguyn/The-Finite-Element-Method-for-the-One-Dimensional-Wave-Equation/main/docs/figures/fig_threshold.gif" width="760"
+       alt="Two panels side by side: at 0.98 of the threshold step the wave is smooth and its amplitude stays at 1; at 1.02 of the threshold the profile collapses into a sawtooth and the amplitude climbs past a million.">
+</p>
+
+<p align="center">
+  <em><strong>The bound is sharp, from both sides.</strong> Same mesh, same initial data,
+  same solver — only <code>Δt</code> differs, by 4%. Below the threshold the amplitude is
+  conserved to within 1%; above it, it passes 10⁶ before <code>t = 1.3</code>. Demonstrating one
+  side only could not distinguish a sharp bound from any tighter one.</em>
+</p>
+
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tu-h-nguyn/The-Finite-Element-Method-for-the-One-Dimensional-Wave-Equation/main/docs/figures/fig_mass.gif" width="760"
+       alt="Two panels at the same time step: the consistent mass matrix explodes to 23 million by t = 0.39, while the lumped mass matrix holds an amplitude of exactly 1 through t = 2.">
+</p>
+
+<p align="center">
+  <em><strong>And why the familiar condition is not enough.</strong> Both panels run at
+  <code>Δt = 0.9 h/c</code> — which satisfies <code>Δt ≤ h/c</code>. Only the mass matrix
+  differs. The consistent one passes 10⁶ before <code>t = 0.4</code> — six orders of
+  magnitude — while the lumped one holds <code>max|u|</code> within 1% of 1 all the way
+  to <code>t = 2</code>. That single step size sits in
+  the gap between the two thresholds, which is what the whole analysis is about.</em>
+</p>
+
+---
 
 ## The result
 
@@ -79,7 +109,14 @@ checked separately against closed-form mathematics, in [`tests/`](tests/):
 - that `Δt = 0.9 h/c` — which satisfies the *familiar* CFL condition — diverges
   to `3.4e116` with the full mass matrix while staying stable when lumped. That
   is the project's central claim, tested in both directions;
-- the observed convergence orders, 2 in `L²` and 1 in the `H¹` seminorm.
+- the observed convergence orders, 2 in `L²` and 1 in the `H¹` seminorm;
+- **the numbers quoted in the two animations' captions.** Those captions make
+  specific claims — passes `10⁶` before `t = 1.3`, amplitude held within 1% of 1
+  to `t = 2`, six orders of magnitude between the mass matrices — and each one is
+  a test. This is not decoration: an earlier draft quoted the peak amplitude
+  directly, and changing the animation's frame stride moved that peak from
+  `2.3×10⁷` to `3.2×10⁶` while the caption sat there still saying `2.3×10⁷`. The
+  claims are now phrased so they do not depend on sampling, and they are pinned.
 
 The suite was mutation-tested: six deliberate bugs were planted in
 `fem_wave.py` and all six are caught. One of them — replacing the second-order

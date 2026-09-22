@@ -370,6 +370,22 @@
           </div>
         </div>
 
+
+        <figure>
+          <img src="figures/fig_threshold.gif" width="680" height="404" loading="lazy"
+               alt="Two panels animating side by side. Left, at 0.98 of the threshold step, a smooth sine wave oscillates and the amplitude trace below stays at 1. Right, at 1.02 of the threshold, the profile becomes a violent sawtooth filling the panel and the amplitude trace climbs from 1 to 1.27 million before the run is cut off.">
+          <figcaption>
+            <strong>The bound is sharp, from both sides.</strong> Same mesh (N = 64), same
+            initial data, same solver — only Δt differs, and only by 4%. At
+            0.98 Δt* the amplitude is conserved to within 1%; at 1.02 Δt* it passes
+            10<sup>6</sup> before t = 1.3, and the run is cut off there. A demonstration from
+            one side only could not tell a sharp bound from any tighter one, which is why
+            both are shown. The trace underneath is max<sub>x</sub>|u| on a log axis, so the
+            growth is visible over six decades; both panels share one time axis, so the
+            unstable run visibly stops where it diverges.
+          </figcaption>
+        </figure>
+
         <div class="callout">
           <strong>The one-line version.</strong> Stability of the leapfrog scheme is
           governed by the largest generalised eigenvalue of the stiffness/mass pair, and
@@ -592,6 +608,21 @@
         </figure>
 
         <h3>4 — What lumping buys</h3>
+
+        <figure>
+          <img src="figures/fig_mass.gif" width="680" height="404" loading="lazy"
+               alt="Two animated panels at the same time step. Left, the full mass matrix: the profile explodes into a sawtooth and the amplitude trace reaches 23 million by t = 0.39. Right, the lumped mass matrix: a clean sine wave with the amplitude trace pinned at 1 through t = 2.">
+          <figcaption>
+            <strong>Why the familiar condition is not enough.</strong> Both panels run at
+            Δt = 0.9 h/c, which satisfies the CFL condition everybody quotes,
+            Δt ≤ h/c. Same mesh, same data, same step: only the mass matrix
+            differs. The consistent mass matrix passes 10<sup>6</sup> before t = 0.4 — six
+            orders of magnitude — while the lumped one holds
+            max<sub>x</sub>|u| within 1% of 1 all the way to t = 2. This single step
+            size sits between the two thresholds — above 1/√3, below 1 — which is exactly
+            the gap the analysis is about.
+          </figcaption>
+        </figure>
         <p>
           Repeating experiment 1 with the lumped mass matrix at θ = 0.9 — beyond the full
           matrix's threshold, inside the lumped one's:

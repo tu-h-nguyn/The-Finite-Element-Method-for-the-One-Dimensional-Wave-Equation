@@ -17,7 +17,7 @@ matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from fem_wave import assemble, growth, solve, thomas, tri_mul  # noqa: E402
+from fem_wave import assemble, growth, lam_max, solve, thomas, tri_mul  # noqa: E402
 
 plt.rcParams.update({
     "font.family": "DejaVu Sans", "font.size": 9,
@@ -39,6 +39,16 @@ VI = {
     "stab_title": r"Ngưỡng ổn định thực nghiệm ($N=160$, $c=1$)",
     "anim_early": "Hai chu kỳ đầu", "anim_late": "Sau 18 chu kỳ",
     "anim_env": "biên độ bảo toàn: đỉnh vẫn chạm $\\pm 1$",
+    "thr_stable": r"$\Delta t = 0{,}98\,\Delta t^*$",
+    "thr_unstable": r"$\Delta t = 1{,}02\,\Delta t^*$",
+    "thr_ok": "ỔN ĐỊNH — biên độ bảo toàn",
+    "thr_bad": "MẤT ỔN ĐỊNH — biên độ bùng nổ",
+    "thr_sub": "Cùng lưới $N=64$, cùng dữ liệu đầu. Chỉ $\\Delta t$ khác nhau 4%, "
+               "hai bên ngưỡng $\\Delta t^*/h = {th:.4f}$.",
+    "mass_bad": "MẤT ỔN ĐỊNH",
+    "mass_ok": "ỔN ĐỊNH",
+    "mass_sub": "Cùng $\\Delta t = {theta}\\,h/c$ — thoả điều kiện CFL quen thuộc "
+                "$\\Delta t \\leq h/c$. Chỉ ma trận khối lượng khác nhau.",
 }
 EN = {
     "l2err": r"$L^2$ error", "h1err": r"$H^1$ error",
@@ -50,6 +60,16 @@ EN = {
     "stab_title": r"Measured stability threshold ($N=160$, $c=1$)",
     "anim_early": "First two periods", "anim_late": "After eighteen periods",
     "anim_env": "amplitude conserved: the peak still reaches $\\pm 1$",
+    "thr_stable": r"$\Delta t = 0.98\,\Delta t^*$",
+    "thr_unstable": r"$\Delta t = 1.02\,\Delta t^*$",
+    "thr_ok": "STABLE — amplitude conserved",
+    "thr_bad": "UNSTABLE — amplitude runs away",
+    "thr_sub": "Same mesh $N=64$, same initial data. Only $\\Delta t$ differs, by 4%, "
+               "across the threshold $\\Delta t^*/h = {th:.4f}$.",
+    "mass_bad": "UNSTABLE",
+    "mass_ok": "STABLE",
+    "mass_sub": "Same $\\Delta t = {theta}\\,h/c$ — it satisfies the CFL condition "
+                "everybody quotes, $\\Delta t \\leq h/c$. Only the mass matrix differs.",
 }
 
 
@@ -219,6 +239,8 @@ def main():
     fig_stability(labels, save)
     if web:  # a PDF cannot animate; the report keeps the four static snapshots
         fig_solution_animation(labels, outdir)
+        fig_threshold_animation(labels, outdir)
+        fig_mass_animation(labels, outdir)
 
     print(f"Wrote 4 figures to {outdir}")
     print("L2:", [f"{v:.4e}" for v in L2])
@@ -320,6 +342,153 @@ def fig_solution_animation(L, outdir, N=20, theta=0.5, c=1.0):
     anim.save(path, writer=PillowWriter(fps=18), dpi=96)
     plt.close(fig)
     print(f"  fig_solution.gif  {n} frames, {os.path.getsize(path) // 1024} KB")
+
+
+# ----------------------------------------------------------------------
+# The sharp threshold, animated (web only)
+# ----------------------------------------------------------------------
+def run_states(N, theta, T, lumped=False, c=1.0, cap=1e6, stride=1):
+    """Step the scheme and keep (t, u, max|u|) for every `stride`-th state.
+
+    Stops early once max|u| passes `cap`: past that the run is unambiguously
+    divergent and further steps only cost frames. Returns the states actually
+    computed, never interpolated.
+    """
+    (Td, Tl), (Sd, Sl), h = assemble(N, lumped)
+    dt = theta * h
+    M = int(round(T / dt))
+    x = np.linspace(0, 1, N + 1)
+    U0 = np.sin(2 * np.pi * x[1:-1])
+    A0 = thomas(Td, Tl, -(c ** 2) * tri_mul(Sd, Sl, U0))
+    Um, Uc = U0, U0 + 0.5 * dt ** 2 * A0
+
+    out = []
+
+    def keep(n, Uint):
+        if n % stride:
+            return True
+        a = float(np.max(np.abs(Uint))) if np.isfinite(Uint).all() else np.inf
+        out.append((n * dt, np.concatenate(([0.0], Uint, [0.0])), a))
+        return a <= cap
+
+    keep(0, U0)
+    keep(1, Uc)
+    for n in range(2, M + 1):
+        Un = 2 * Uc - Um + dt ** 2 * thomas(Td, Tl, -(c ** 2) * tri_mul(Sd, Sl, Uc))
+        Um, Uc = Uc, Un
+        if not np.isfinite(Uc).all() or not keep(n, Uc):
+            break
+    return x, out
+
+
+def _pad(frames, n):
+    """Hold the last state so a run that diverged early still fills the clip."""
+    return frames + [frames[-1]] * (n - len(frames)) if len(frames) < n else frames[:n]
+
+
+def _two_panel_animation(L, outdir, name, runs, subtitle, ylog=(3e-1, 1e6),
+                         nframes=78, fps=14):
+    """Two runs side by side: the profile on top, max|u| on a log axis below.
+
+    The profile axis is deliberately fixed at +-1.5. A diverging run leaves the
+    frame instead of rescaling it, which is what divergence looks like; the
+    trace underneath carries the magnitude, over eight decades.
+    """
+    from matplotlib.animation import FuncAnimation, PillowWriter
+
+    n = min(nframes, max(len(f) for _, f, _, _, _ in runs))
+    # Both traces share one time axis. Without this the run that diverged early
+    # gets a shorter axis of its own, and the panels stop being comparable at a
+    # glance -- the very thing the figure exists to make easy.
+    tmax = max(max(f[0] for f in frames) for _, frames, _, _, _ in runs) or 1.0
+    fig, axes = plt.subplots(2, len(runs), figsize=(7.4, 4.4),
+                             gridspec_kw={"height_ratios": [1.35, 1]})
+    art = []
+    for j, (title, frames, colour, verdict, _) in enumerate(runs):
+        frames = _pad(frames, n)
+        runs[j] = (title, frames, colour, verdict, runs[j][4])
+        top, bot = axes[0, j], axes[1, j]
+        for lvl in (-1.0, 1.0):
+            top.axhline(lvl, color="#aaaaaa", ls=":", lw=0.9, zorder=0)
+        prof, = top.plot(runs[j][4], frames[0][1], "-o", color=colour, ms=2.2, lw=1.1)
+        top.set_ylim(-1.5, 1.5)
+        top.set_xlim(0, 1)
+        # Verdict and setting go in ONE title, two lines. As separate artists
+        # they overlapped whenever the verdict ran long.
+        top.set_title(f"{verdict}\n{title}", fontsize=9, color=colour,
+                      linespacing=1.5, fontweight="bold")
+        top.set_xlabel("$x$")
+        if j == 0:
+            top.set_ylabel("$u(x,t)$")
+        top.grid(True, alpha=0.25)
+
+        bot.axhline(1.0, color="#aaaaaa", ls=":", lw=0.9)
+        trace, = bot.plot([], [], color=colour, lw=1.6)
+        bot.set_yscale("log")
+        bot.set_ylim(*ylog)
+        bot.set_xlim(0, tmax)
+        bot.set_xlabel("$t$")
+        if j == 0:
+            bot.set_ylabel(r"$\max_x |u|$")
+        bot.grid(True, alpha=0.25, which="both")
+        readout = bot.text(0.03, 0.88, "", transform=bot.transAxes, fontsize=8.5,
+                           color=colour, family="DejaVu Sans Mono", va="top")
+        art.append((prof, trace, readout, None))
+
+    fig.text(0.5, 0.005, subtitle, ha="center", fontsize=8, color="#555555")
+    fig.tight_layout(rect=(0, 0.04, 1, 1))
+
+    def draw(k):
+        changed = []
+        for (prof, trace, readout, _), (_, frames, _, _, _) in zip(art, runs, strict=True):
+            t, U, a = frames[k]
+            prof.set_ydata(U)
+            ts = [f[0] for f in frames[:k + 1]]
+            As = [max(f[2], ylog[0]) for f in frames[:k + 1]]
+            trace.set_data(ts, As)
+            readout.set_text(f"t={t:5.2f}\nmax|u|={a:.3g}")
+            changed += [prof, trace, readout]
+        return changed
+
+    anim = FuncAnimation(fig, draw, frames=n, interval=1000 // fps, blit=False)
+    path = os.path.join(outdir, f"{name}.gif")
+    anim.save(path, writer=PillowWriter(fps=fps), dpi=92)
+    plt.close(fig)
+    print(f"  {name}.gif  {n} frames, {os.path.getsize(path) // 1024} KB")
+
+
+def fig_threshold_animation(L, outdir, N=64, c=1.0):
+    """The sharp bound, from both sides, on one mesh.
+
+    Only dt changes between the panels: 2% under the threshold the scheme
+    conserves amplitude, 2% over it the amplitude runs away. A one-sided
+    demonstration could not tell a sharp bound from any tighter one.
+    """
+    th = 2.0 / ((1.0 / N) * np.sqrt(lam_max(N, False)))
+    x, lo = run_states(N, 0.98 * th, T=2.0, c=c, stride=3)
+    _, hi = run_states(N, 1.02 * th, T=2.0, c=c, stride=3)
+    _two_panel_animation(
+        L, outdir, "fig_threshold",
+        [(L["thr_stable"], lo, BLUE, L["thr_ok"], x),
+         (L["thr_unstable"], hi, RED, L["thr_bad"], x)],
+        L["thr_sub"].format(th=th))
+
+
+def fig_mass_animation(L, outdir, N=64, theta=0.9, c=1.0):
+    """The same dt on both mass matrices -- the project's central claim.
+
+    dt = 0.9 h/c satisfies the CFL condition everybody quotes. It is still
+    unstable on the consistent mass matrix, and perfectly stable once the mass
+    is lumped. Same mesh, same data, same step: only the mass matrix differs.
+    """
+    x, full = run_states(N, theta, T=2.0, lumped=False, c=c, stride=3)
+    _, lump = run_states(N, theta, T=2.0, lumped=True, c=c, stride=3)
+    _two_panel_animation(
+        L, outdir, "fig_mass",
+        [(L["full"], full, RED, L["mass_bad"], x),
+         (L["lumped"], lump, BLUE, L["mass_ok"], x)],
+        L["mass_sub"].format(theta=theta))
+
 
 if __name__ == "__main__":
     main()

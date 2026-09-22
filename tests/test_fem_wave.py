@@ -224,3 +224,82 @@ def test_refining_dt_at_fixed_mesh_leaves_the_error_at_the_spatial_floor():
     assert all(x < 1e-3 for x in e), e
     # Khong doi qua 1% -- da cham san khong gian.
     assert max(e) / min(e) < 1.01, e
+
+
+# ----------------------------------------------------------------------
+# Cac khang dinh duoc IN RA trong chu thich cua hai hinh dong tren trang
+# ----------------------------------------------------------------------
+# Hai hinh dong la phan gay an tuong nhat cua trang, va chu thich cua chung
+# noi ra nhung con so cu the. Nhung con so do phai duoc KIEM, khong phai go
+# tay -- mot lan chinh tham so lay mau da tung lam gia tri dinh ghi duoc doi
+# tu 2,3e7 thanh 3,2e6 ma chu thich van dung nguyen.
+#
+# Vi the cac phep kiem duoi day chi khang dinh nhung dieu KHONG phu thuoc vao
+# cach lay mau: "vuot 1e6 truoc thoi diem t", va "bien do giu trong pham vi
+# 1% cua 1". Chung dung voi moi stride, moi cap.
+def _amplitude_history(N, theta, T, lumped):
+    """max|u| tai moi buoc, khong bo qua buoc nao."""
+    (Td, Tl), (Sd, Sl), h = assemble(N, lumped)
+    dt = theta * h
+    M = int(round(T / dt))
+    x = np.linspace(0, 1, N + 1)
+    U0 = np.sin(2 * np.pi * x[1:-1])
+    A0 = thomas(Td, Tl, -tri_mul(Sd, Sl, U0))
+    Um, Uc = U0, U0 + 0.5 * dt**2 * A0
+    hist = [(0.0, np.abs(U0).max()), (dt, np.abs(Uc).max())]
+    for n in range(2, M + 1):
+        Un = 2 * Uc - Um + dt**2 * thomas(Td, Tl, -tri_mul(Sd, Sl, Uc))
+        Um, Uc = Uc, Un
+        if not np.isfinite(Uc).all():
+            hist.append((n * dt, np.inf))
+            break
+        hist.append((n * dt, np.abs(Uc).max()))
+        if hist[-1][1] > 1e12:
+            break
+    return hist
+
+
+def _first_time_above(hist, level):
+    for t, a in hist:
+        if a > level:
+            return t
+    return None
+
+
+THETA_STAR_64 = 2.0 / ((1.0 / 64) * np.sqrt(lam_max(64, False)))
+
+
+def test_caption_threshold_stable_side_conserves_amplitude_to_one_percent():
+    """Chu thich: "at 0.98 dt* the amplitude is conserved to within 1%"."""
+    hist = _amplitude_history(64, 0.98 * THETA_STAR_64, T=2.0, lumped=False)
+    peak = max(a for _, a in hist)
+    assert peak <= 1.01, peak
+
+
+def test_caption_threshold_unstable_side_passes_1e6_before_t_1_3():
+    """Chu thich: "at 1.02 dt* it passes 1e6 before t = 1.3"."""
+    hist = _amplitude_history(64, 1.02 * THETA_STAR_64, T=2.0, lumped=False)
+    t = _first_time_above(hist, 1e6)
+    assert t is not None and t < 1.3, t
+
+
+def test_caption_full_mass_passes_1e6_before_t_0_4_at_the_familiar_cfl():
+    """Chu thich: "the consistent mass matrix passes 1e6 before t = 0.4"."""
+    hist = _amplitude_history(64, 0.9, T=2.0, lumped=False)
+    t = _first_time_above(hist, 1e6)
+    assert t is not None and t < 0.4, t
+
+
+def test_caption_lumped_mass_stays_within_one_percent_of_one_to_t_2():
+    """Chu thich: "the lumped one holds max|u| within 1% of 1 all the way to t = 2"."""
+    hist = _amplitude_history(64, 0.9, T=2.0, lumped=True)
+    peak = max(a for _, a in hist)
+    assert peak <= 1.01, peak
+    assert hist[-1][0] >= 1.99, hist[-1][0]
+
+
+def test_caption_six_orders_of_magnitude_between_the_two_mass_matrices():
+    """Chu thich: "six orders of magnitude" giua hai ma tran khoi luong."""
+    full = max(a for _, a in _amplitude_history(64, 0.9, T=2.0, lumped=False))
+    lump = max(a for _, a in _amplitude_history(64, 0.9, T=2.0, lumped=True))
+    assert full / lump > 1e6, (full, lump)

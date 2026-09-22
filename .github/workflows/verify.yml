@@ -92,8 +92,13 @@ jobs:
               || { echo "::error::docs/index.html does not reference fig_${f}.svg"; exit 1; }
           done
           # the solution figure is the animation, not an SVG
-          grep -q "figures/fig_solution.gif" docs/index.html \
-            || { echo "::error::docs/index.html does not reference fig_solution.gif"; exit 1; }
-          test -s docs/figures/fig_solution.gif \
-            || { echo "::error::fig_solution.gif was not generated"; exit 1; }
-          echo "All four figures are referenced by the page."
+          # The animations carry the two claims the project exists for, so a
+          # silently missing one would gut the page while everything still
+          # looked green.
+          for g in solution threshold mass; do
+            grep -q "figures/fig_${g}.gif" docs/index.html \
+              || { echo "::error::docs/index.html does not reference fig_${g}.gif"; exit 1; }
+            test -s "docs/figures/fig_${g}.gif" \
+              || { echo "::error::fig_${g}.gif was not generated"; exit 1; }
+          done
+          echo "All four static figures and all three animations are referenced."
