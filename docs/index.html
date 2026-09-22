@@ -494,12 +494,17 @@
         </figure>
 
         <figure>
-          <img src="figures/fig_solution.svg" width="1036" height="278"
-               alt="Four snapshots of the FEM solution against the exact solution at t = 0, 0.125, 0.5 and 20. Amplitude is preserved at t = 20; the curves are visibly shifted in phase.">
+          <img src="figures/fig_solution.gif" width="691" height="259" loading="lazy"
+               alt="Animation, two panels of the same run. Left, the first two periods: the computed solution sits on the exact one. Right, eighteen periods later: both still reach the same peaks, but they are visibly out of step with each other.">
           <figcaption>
-            FEM solution (N = 20, θ = 0.5) against the exact solution. After 20 periods
-            the amplitude has <em>not</em> grown — as the discrete energy identity
-            predicts. The long-run error is phase error, i.e. numerical dispersion.
+            The scheme running (N = 20, θ = 0.5), the same solve shown at two epochs.
+            Early, the two curves are indistinguishable. Eighteen periods later they are
+            visibly out of step — and the dotted guides show why that is
+            <em>dispersion, not decay</em>: the peak over the late window is
+            <code>1.000000</code> against <code>0.999869</code> over the early one, so
+            the amplitude is conserved and the error is entirely in the phase, exactly
+            as the discrete energy identity predicts. 41 frames, one every second time
+            step — computed states throughout, never interpolated.
           </figcaption>
         </figure>
 

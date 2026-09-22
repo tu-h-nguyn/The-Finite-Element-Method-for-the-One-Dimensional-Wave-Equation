@@ -64,8 +64,13 @@ jobs:
 
       - name: Confirm the served page still references every figure it ships
         run: |
-          for f in convergence solution stability energy; do
+          for f in convergence stability energy; do
             grep -q "figures/fig_${f}.svg" docs/index.html \
               || { echo "::error::docs/index.html does not reference fig_${f}.svg"; exit 1; }
           done
+          # the solution figure is the animation, not an SVG
+          grep -q "figures/fig_solution.gif" docs/index.html \
+            || { echo "::error::docs/index.html does not reference fig_solution.gif"; exit 1; }
+          test -s docs/figures/fig_solution.gif \
+            || { echo "::error::fig_solution.gif was not generated"; exit 1; }
           echo "All four figures are referenced by the page."
